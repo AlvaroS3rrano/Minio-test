@@ -6,6 +6,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
 import io.minio.BucketExistsArgs;
+import io.minio.DownloadObjectArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
 import io.minio.ObjectWriteResponse;
@@ -37,7 +38,13 @@ public class App {
 			System.out.println("The bucket already exists");
 		}
 		upload(minioClient);
-
+		try {
+			downloadFile(minioClient);
+		} catch (MinioException e) {
+			System.out.println("Error downloading file");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 	
 	// to connect with minio
@@ -65,14 +72,15 @@ public class App {
 	}
 	
 	// to create a bucket
-	private static void createBucket(MinioClient minioClient) throws InvalidKeyException, ErrorResponseException, InsufficientDataException, InternalException, InvalidResponseException, NoSuchAlgorithmException, ServerException, XmlParserException, IOException {
+	private static void createBucket(MinioClient minioClient) 
+			throws InvalidKeyException, ErrorResponseException, InsufficientDataException, InternalException, InvalidResponseException, NoSuchAlgorithmException, ServerException, XmlParserException, IOException {
 		String bucketName = "hola";
 		MakeBucketArgs mbArgs = MakeBucketArgs.builder() // otras opciones podrian ser region 
 				.bucket(bucketName)						 // objectLock ...
 				.build();
 		minioClient.makeBucket(mbArgs); // no devuelve nada
 		
-		BucketExistsArgs beArgs = BucketExistsArgs.builder()
+		BucketExistsArgs beArgs = BucketExistsArgs.builder() // para comprobar si el bucket existe
 				.bucket(bucketName)
 				.build();
 		
@@ -82,5 +90,22 @@ public class App {
 			System.out.println("Bucket " + bucketName + " does not exists");
 		}
 	}
+	
+	// to download files
+	private static void downloadFile(MinioClient minioClient) 
+			throws InvalidKeyException, ErrorResponseException, InsufficientDataException, InternalException, InvalidResponseException, NoSuchAlgorithmException, ServerException, XmlParserException, IOException {
+		String bucketName = "hola";
+		String objectName = "trial.txt";
+		String fileName = "/home/alvaro/Desktop/poddera/new.txt"; // donde te descarga el archivo y con que nombre
+		
+		DownloadObjectArgs dArgs = DownloadObjectArgs.builder()
+				.bucket(bucketName)
+				.object(objectName)
+				.filename(fileName)
+				.build();
+		minioClient.downloadObject(dArgs);
+	}
+	
+	
 
 }
