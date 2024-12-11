@@ -1,30 +1,24 @@
 package minio_test;
 
 import java.io.FileInputStream;
-import java.io.IOException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.util.Iterator;
 import java.util.List;
 
 import io.minio.BucketExistsArgs;
 import io.minio.DownloadObjectArgs;
+import io.minio.GetObjectArgs;
+import io.minio.GetObjectResponse;
 import io.minio.ListObjectsArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
 import io.minio.ObjectWriteResponse;
 import io.minio.PutObjectArgs;
 import io.minio.RemoveObjectArgs;
-import io.minio.RemoveObjectsArgs;
 import io.minio.Result;
+import io.minio.StatObjectArgs;
+import io.minio.StatObjectResponse;
 import io.minio.UploadObjectArgs;
-import io.minio.errors.ErrorResponseException;
-import io.minio.errors.InsufficientDataException;
-import io.minio.errors.InternalException;
-import io.minio.errors.InvalidResponseException;
 import io.minio.errors.MinioException;
-import io.minio.errors.ServerException;
-import io.minio.errors.XmlParserException;
 import io.minio.messages.Bucket;
 import io.minio.messages.Item;
 
@@ -63,10 +57,22 @@ public class App {
 		System.out.println("Object list before delete");
 		listObjects(minioClient);
 		
-		delete(minioClient);
+		//deleteObject(minioClient);
 		
 		System.out.println("Object list after delete");
 		listObjects(minioClient);
+		
+		System.out.println("" );
+		System.out.println("get Object");
+		System.out.println("");
+		
+		getObject(minioClient);
+		
+		System.out.println("" );
+		System.out.println("stat Object");
+		System.out.println("");
+		
+		statObject(minioClient);
 	}
 	
 	// to connect with minio
@@ -142,7 +148,7 @@ public class App {
 		PutObjectArgs uArgs = PutObjectArgs.builder()
 				.bucket(bucketName)
 				.object(objectName)
-				.stream(stream, 11, -1) // hay que saber cuantos bits tine el archivo o sino ponerlo a -1 y poner part size
+				.stream(stream,11, -1) // hay que saber cuantos bits tine el archivo o sino ponerlo a -1 y poner part size
 				.contentType(contentType)
 				.build();
 		ObjectWriteResponse resp = minioClient.putObject(uArgs);
@@ -175,7 +181,7 @@ public class App {
 	}
 	
 	// to delete an object
-	private static void delete(MinioClient minioClient) throws Exception{ // si intentas borrar un objeto que no existe no dice nada
+	private static void deleteObject(MinioClient minioClient) throws Exception{ // si intentas borrar un objeto que no existe no dice nada
 		String bucketName = "hola";
 		String objectName = "hello-world.txt";
 		
@@ -186,4 +192,36 @@ public class App {
 		
 		minioClient.removeObject(rArgs);
 	}
+	
+	// to get the object content
+	private static void getObject(MinioClient minioClient) throws Exception{ // permite leer el contenido del objeto
+		String bucketName ="hola";
+		String objectName = "trial.txt";
+		
+		GetObjectArgs gArgs = GetObjectArgs.builder()
+				.bucket(bucketName)
+				.object(objectName)
+				.build();
+		GetObjectResponse resp = minioClient.getObject(gArgs);
+		
+		System.out.println("Object: "+resp.object());
+		
+	}
+	
+	// to get the object metadata
+		private static void statObject(MinioClient minioClient) throws Exception{ // permite leer los metadatos 
+			String bucketName ="hola";											  // sin descargar el contenido
+			String objectName = "trial.txt";
+			
+			StatObjectArgs gArgs = StatObjectArgs.builder()
+					.bucket(bucketName)
+					.object(objectName)
+					.build();
+			StatObjectResponse resp = minioClient.statObject(gArgs);
+			
+			System.out.println("Object: "+resp.object() + " last modified: " + resp.lastModified());
+			
+		}
+	
+	
 }
