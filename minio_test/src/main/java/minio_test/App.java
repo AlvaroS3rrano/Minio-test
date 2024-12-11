@@ -1,5 +1,6 @@
 package minio_test;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -10,6 +11,7 @@ import io.minio.DownloadObjectArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
 import io.minio.ObjectWriteResponse;
+import io.minio.PutObjectArgs;
 import io.minio.UploadObjectArgs;
 import io.minio.errors.ErrorResponseException;
 import io.minio.errors.InsufficientDataException;
@@ -21,7 +23,8 @@ import io.minio.errors.XmlParserException;
 import io.minio.messages.Bucket;
 
 public class App {
-
+	
+	private static String LOCATION = "/home/alvaro/eclipse-workspace/Minio-test/minio_test/src/main/resources/";
 	public static void main(String[] args) throws Exception {
 		MinioClient minioClient = demo(); // Conectamos con minio 
 		try {
@@ -38,6 +41,7 @@ public class App {
 			System.out.println("The bucket already exists");
 		}
 		upload(minioClient);
+		/*
 		try {
 			downloadFile(minioClient);
 		} catch (MinioException e) {
@@ -45,6 +49,8 @@ public class App {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		*/
+		updateStream(minioClient);
 	}
 	
 	// to connect with minio
@@ -60,10 +66,12 @@ public class App {
 	private static void upload(MinioClient minioClient) throws Exception {
 		String bucketName = "hola";
 		String objectName = "trial.txt";
-		String filename = "/home/alvaro/eclipse-workspace/Minio-test/minio_test/src/main/resources/trial.txt";
+		String contentType = "text/plain";
+		String filename = LOCATION + "trial.txt";
 		UploadObjectArgs uArgs = UploadObjectArgs.builder()
 				.bucket(bucketName)
 				.object(objectName)
+				.contentType(contentType)
 				.filename(filename)
 				.build();
 		ObjectWriteResponse resp = minioClient.uploadObject(uArgs);
@@ -73,7 +81,7 @@ public class App {
 	
 	// to create a bucket
 	private static void createBucket(MinioClient minioClient) 
-			throws InvalidKeyException, ErrorResponseException, InsufficientDataException, InternalException, InvalidResponseException, NoSuchAlgorithmException, ServerException, XmlParserException, IOException {
+			throws Exception {
 		String bucketName = "hola";
 		MakeBucketArgs mbArgs = MakeBucketArgs.builder() // otras opciones podrian ser region 
 				.bucket(bucketName)						 // objectLock ...
@@ -93,7 +101,7 @@ public class App {
 	
 	// to download files
 	private static void downloadFile(MinioClient minioClient) 
-			throws InvalidKeyException, ErrorResponseException, InsufficientDataException, InternalException, InvalidResponseException, NoSuchAlgorithmException, ServerException, XmlParserException, IOException {
+			throws Exception {
 		String bucketName = "hola";
 		String objectName = "trial.txt";
 		String fileName = "/home/alvaro/Desktop/poddera/new.txt"; // donde te descarga el archivo y con que nombre
@@ -106,6 +114,24 @@ public class App {
 		minioClient.downloadObject(dArgs);
 	}
 	
-	
+	// to upload a stream 
+	private static void updateStream(MinioClient minioClient) throws Exception{
+		String bucketName = "hola";
+		String objectName = "hello-world.txt";
+		String contentType = "text/plain";
+		String fileName = LOCATION + "hello-world.txt";
+		
+		FileInputStream stream = new FileInputStream(fileName);
+		
+		PutObjectArgs uArgs = PutObjectArgs.builder()
+				.bucket(bucketName)
+				.object(objectName)
+				.stream(stream, 11, -1) // hay que saber cuantos bits tine el archivo o sino ponerlo a -1 y poner part size
+				.contentType(contentType)
+				.build();
+		ObjectWriteResponse resp = minioClient.putObject(uArgs);
+		
+		System.out.println(resp.object() + ": "+ resp.etag()+": "+resp.versionId());
+	}
 
 }
