@@ -6,6 +6,7 @@ import java.util.List;
 
 import io.minio.BucketExistsArgs;
 import io.minio.DownloadObjectArgs;
+import io.minio.GetBucketPolicyArgs;
 import io.minio.GetObjectArgs;
 import io.minio.GetObjectResponse;
 import io.minio.ListObjectsArgs;
@@ -15,6 +16,7 @@ import io.minio.ObjectWriteResponse;
 import io.minio.PutObjectArgs;
 import io.minio.RemoveObjectArgs;
 import io.minio.Result;
+import io.minio.SetBucketPolicyArgs;
 import io.minio.StatObjectArgs;
 import io.minio.StatObjectResponse;
 import io.minio.UploadObjectArgs;
@@ -36,7 +38,7 @@ public class App {
 			e.printStackTrace();
 		}
 		try {
-			createBucket(minioClient);
+			createBucket(minioClient, "hola");
 		} catch (MinioException e) {
 			System.out.println("The bucket already exists");
 		}
@@ -73,6 +75,14 @@ public class App {
 		System.out.println("");
 		
 		statObject(minioClient);
+		
+		try {
+			createBucket(minioClient, "test");
+			setBucketPolicy(minioClient);
+			showPolicy(minioClient, "test");
+		} catch (MinioException e) {
+			System.out.println("The bucket already exists");
+		} 
 	}
 	
 	// to connect with minio
@@ -102,9 +112,8 @@ public class App {
 	}
 	
 	// to create a bucket
-	private static void createBucket(MinioClient minioClient) 
+	private static void createBucket(MinioClient minioClient, String bucketName) 
 			throws Exception {
-		String bucketName = "hola";
 		MakeBucketArgs mbArgs = MakeBucketArgs.builder() // otras opciones podrian ser region 
 				.bucket(bucketName)						 // objectLock ...
 				.build();
@@ -223,5 +232,38 @@ public class App {
 			
 		}
 	
+	private static void setBucketPolicy(MinioClient minioClient) throws Exception{
+		String bucketName = "test";
+		String policyJson = "{"
+			    + "\"Version\": \"2012-10-17\","
+			    + "\"Statement\": ["
+			    + "  {"
+			    + "    \"Effect\": \"Allow\","
+			    + "    \"Principal\": {\"AWS\": \"*\"},"
+			    + "    \"Action\": [\"s3:GetObject\"],"
+			    + "    \"Resource\": [\"arn:aws:s3:::%s/*\"]"
+			    + "  }"
+			    + "]"
+			    + "}";
+
+		policyJson = String.format(policyJson, bucketName);
+        // Aplicar la política al bucket
+        minioClient.setBucketPolicy(
+            SetBucketPolicyArgs.builder()
+                .bucket(bucketName)
+                .config(policyJson)
+                .build()
+        );
+	}
+	
+	private static void showPolicy(MinioClient minioClient, String bucketName) throws Exception{
+		String policy = minioClient.getBucketPolicy(
+			    GetBucketPolicyArgs.builder()
+			        .bucket(bucketName)
+			        .build()
+			);
+
+			System.out.println("Política actual del bucket: " + policy);
+	}
 	
 }
