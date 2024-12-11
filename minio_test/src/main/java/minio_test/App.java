@@ -4,14 +4,17 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.Iterator;
 import java.util.List;
 
 import io.minio.BucketExistsArgs;
 import io.minio.DownloadObjectArgs;
+import io.minio.ListObjectsArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
 import io.minio.ObjectWriteResponse;
 import io.minio.PutObjectArgs;
+import io.minio.Result;
 import io.minio.UploadObjectArgs;
 import io.minio.errors.ErrorResponseException;
 import io.minio.errors.InsufficientDataException;
@@ -21,6 +24,7 @@ import io.minio.errors.MinioException;
 import io.minio.errors.ServerException;
 import io.minio.errors.XmlParserException;
 import io.minio.messages.Bucket;
+import io.minio.messages.Item;
 
 public class App {
 	
@@ -51,6 +55,7 @@ public class App {
 		}
 		*/
 		updateStream(minioClient);
+		listObjects(minioClient);
 	}
 	
 	// to connect with minio
@@ -133,5 +138,20 @@ public class App {
 		
 		System.out.println(resp.object() + ": "+ resp.etag()+": "+resp.versionId());
 	}
-
+	
+	// to list objects
+	private static void listObjects(MinioClient minioClient) throws Exception {
+		String bucketName = "hola";
+		ListObjectsArgs lArgs = ListObjectsArgs.builder()
+				.bucket(bucketName)
+				.build();
+		Iterable<Result<Item>> resp = minioClient.listObjects(lArgs);
+		
+		Iterator<Result<Item>> it = resp.iterator();
+		
+		while (it.hasNext()) {
+			Item i = it.next().get();
+			System.out.println("Object: "+i.objectName()+ " with size: "+ i.size()+ " last modified: "+i.lastModified());
+		}
+	}
 }
