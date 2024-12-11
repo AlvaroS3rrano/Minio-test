@@ -14,6 +14,8 @@ import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
 import io.minio.ObjectWriteResponse;
 import io.minio.PutObjectArgs;
+import io.minio.RemoveObjectArgs;
+import io.minio.RemoveObjectsArgs;
 import io.minio.Result;
 import io.minio.UploadObjectArgs;
 import io.minio.errors.ErrorResponseException;
@@ -55,6 +57,15 @@ public class App {
 		}
 		*/
 		updateStream(minioClient);
+		
+		listBuckets(minioClient);
+		
+		System.out.println("Object list before delete");
+		listObjects(minioClient);
+		
+		delete(minioClient);
+		
+		System.out.println("Object list after delete");
 		listObjects(minioClient);
 	}
 	
@@ -142,9 +153,9 @@ public class App {
 	// to list objects
 	private static void listObjects(MinioClient minioClient) throws Exception {
 		String bucketName = "hola";
-		ListObjectsArgs lArgs = ListObjectsArgs.builder()
-				.bucket(bucketName)
-				.build();
+		ListObjectsArgs lArgs = ListObjectsArgs.builder() // otras opciones serian para mostrar todas la versiones 
+				.bucket(bucketName)						  // que sea recursivo, la version de la api de amazon que queremos usar 
+				.build();								  // y muchas más
 		Iterable<Result<Item>> resp = minioClient.listObjects(lArgs);
 		
 		Iterator<Result<Item>> it = resp.iterator();
@@ -153,5 +164,26 @@ public class App {
 			Item i = it.next().get();
 			System.out.println("Object: "+i.objectName()+ " with size: "+ i.size()+ " last modified: "+i.lastModified());
 		}
+	}
+	
+	// to list bucktes 
+	private static void listBuckets(MinioClient minioClient) throws Exception{
+		List<Bucket> bucketList = minioClient.listBuckets();
+		for (Bucket bucket: bucketList) {
+			System.out.println(bucket.name()+ ", "+ bucket.creationDate());
+		}
+	}
+	
+	// to delete an object
+	private static void delete(MinioClient minioClient) throws Exception{ // si intentas borrar un objeto que no existe no dice nada
+		String bucketName = "hola";
+		String objectName = "hello-world.txt";
+		
+		RemoveObjectArgs rArgs = RemoveObjectArgs.builder()
+				.bucket(bucketName)
+				.object(objectName)
+				.build();
+		
+		minioClient.removeObject(rArgs);
 	}
 }
