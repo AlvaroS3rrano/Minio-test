@@ -27,10 +27,12 @@ import io.minio.messages.Item;
 public class App {
 	
 	private static String LOCATION = "/home/alvaro/eclipse-workspace/Minio-test/minio_test/src/main/resources/";
+	private static String SERVER = "http://127.0.0.1:9000";
 	private static String ACCESS_KEY = "minioadmin";
 	private static String SECRET_KEY = "minioadmin";
 	private static String ACCESS_KEY_2 = "newuser";
 	private static String SECRET_KEY_2 = "newuserpassword";
+	
 	
 	public static void main(String[] args) throws Exception {
 		MinioClient minioClient = connectToMinio(ACCESS_KEY, SECRET_KEY); // Conectamos con minio
@@ -177,7 +179,7 @@ public class App {
 	// to connect with minio
 	private static MinioClient connectToMinio(String accesKey, String secretKey) {
 		MinioClient minioClient = MinioClient.builder()
-				.endpoint("http://127.0.0.1:9000")
+				.endpoint(SERVER)
 				.credentials(accesKey, secretKey)
 				.build();
 		return minioClient;
