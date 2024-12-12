@@ -27,77 +27,164 @@ import io.minio.messages.Item;
 public class App {
 	
 	private static String LOCATION = "/home/alvaro/eclipse-workspace/Minio-test/minio_test/src/main/resources/";
+	private static String ACCESS_KEY = "minioadmin";
+	private static String SECRET_KEY = "minioadmin";
+	private static String ACCESS_KEY_2 = "newuser";
+	private static String SECRET_KEY_2 = "newuserpassword";
+	
 	public static void main(String[] args) throws Exception {
-		MinioClient minioClient = demo(); // Conectamos con minio 
+		MinioClient minioClient = connectToMinio(ACCESS_KEY, SECRET_KEY); // Conectamos con minio
 		try {
 			List<Bucket> bList = minioClient.listBuckets();
-			System.out.println("Connection success, total buckets: "+bList.size());
+			System.out.println("Connection success");
 		} catch (MinioException e) {
 			System.out.println("Connection failed: "+e.getMessage());
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		
+		// crear el bucket hola
 		try {
+			System.out.println("Creating bucket hola");
 			createBucket(minioClient, "hola");
+			System.out.println("Bucket created successfully");
+			showPolicy(minioClient, "hola");
 		} catch (MinioException e) {
-			System.out.println("The bucket already exists");
+			System.out.println("The bucket already exists: " +e.getMessage());
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
-		upload(minioClient);
+		
+		// subir el archivo trial.txt
+		try {
+			System.out.println("Uploading file trial.txt to bucket hola");
+			upload(minioClient, "hola", "trial.txt");
+			System.out.println("File uploaded successfully");
+		} catch (MinioException e) {
+			System.out.println("Error uploading de file: "+e.getMessage());
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 		/*
+		// descargar el archivo trial.txt
 		try {
 			downloadFile(minioClient);
 		} catch (MinioException e) {
-			System.out.println("Error downloading file");
+			System.out.println("Error downloading file: "+ e.getMessage());
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		*/
-		updateStream(minioClient);
-		
-		listBuckets(minioClient);
-		
-		System.out.println("Object list before delete");
-		listObjects(minioClient);
-		
-		//deleteObject(minioClient);
-		
-		System.out.println("Object list after delete");
-		listObjects(minioClient);
-		
-		System.out.println("" );
-		System.out.println("get Object");
-		System.out.println("");
-		
-		getObject(minioClient);
-		
-		System.out.println("" );
-		System.out.println("stat Object");
-		System.out.println("");
-		
-		statObject(minioClient);
-		
+		// subir archivo hello-world.txt como un stream a hola
 		try {
+			System.out.println("Uploading file hello-world.txt as a stream to bucket hola");
+			updateStream(minioClient);
+			System.out.println("File uploaded successfully");
+		} catch (MinioException e) {
+			System.out.println("Error uploading de file: "+e.getMessage());
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		// Mostrar lista de buckets
+		try {
+			System.out.println("Buckets list: ");
+			listBuckets(minioClient);
+		} catch (MinioException e) {
+			System.out.println("Error showing buckets: " +e.getMessage());
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		// mostrar objetos en bucket hola
+		try {
+			System.out.println("Objects in hola list: ");
+			listObjects(minioClient);
+		} catch (MinioException e) {
+			System.out.println("Error showing objects: " +e.getMessage());
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		// mostrar objetos en bucket hola despues de eliminar hello-world.txt
+		try {
+			System.out.println("Objects in hola list after deleting hello-world.txt: ");
+			deleteObject(minioClient);
+			listObjects(minioClient);
+		} catch (MinioException e) {
+			System.out.println("Error showing objects: " +e.getMessage());
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		// usar getObject
+		try {
+			System.out.println("Example of using getObject");
+			getObject(minioClient);
+		} catch (MinioException e) {
+			System.out.println("Error using getObject: " +e.getMessage());
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		// usar statObject
+		try {
+			System.out.println("Example of using statObject");
+			statObject(minioClient);
+		} catch (MinioException e) {
+			System.out.println("Error using statObject: " +e.getMessage());
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		// probando las politicas
+		try {
+			System.out.println("Creating a new bucket (test) with a only read policy ");
 			createBucket(minioClient, "test");
-			setBucketPolicy(minioClient);
+			setOnlyReadBucketPolicy(minioClient);
 			showPolicy(minioClient, "test");
 		} catch (MinioException e) {
-			System.out.println("The bucket already exists");
-		} 
+			System.out.println("Error: "+e.getMessage());
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		// intentar subir un archivo en test con solo lectura
+		try {
+			System.out.println("Trying to upload a file in bucket test");
+			upload(minioClient, "test", "trial.txt");
+			System.out.println("The file can be uploaded with the admin account");
+		} catch (MinioException e) {
+			System.out.println("Error uploading the file: "+e.getMessage());
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		// intentar subir un archivo en test con una cuenta no admin
+		try {
+			System.out.println("Login as non admin user");
+			MinioClient minioClient2 = connectToMinio(ACCESS_KEY_2, SECRET_KEY_2);
+			System.out.println("Trying to upload a file in bucket test");
+			upload(minioClient2, "test", "hello-world.txt");
+			System.out.println("The file can be uploaded with the admin account");
+		} catch (MinioException e) {
+			System.out.println("Error uploading the file: "+e.getMessage());
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 	
 	// to connect with minio
-	private static MinioClient demo() {
+	private static MinioClient connectToMinio(String accesKey, String secretKey) {
 		MinioClient minioClient = MinioClient.builder()
 				.endpoint("http://127.0.0.1:9000")
-				.credentials("minioadmin", "minioadmin")
+				.credentials(accesKey, secretKey)
 				.build();
 		return minioClient;
 	}
 	
 	// to upload files
-	private static void upload(MinioClient minioClient) throws Exception {
-		String bucketName = "hola";
-		String objectName = "trial.txt";
+	private static void upload(MinioClient minioClient, String bucketName, String objectName) throws Exception {
 		String contentType = "text/plain";
 		String filename = LOCATION + "trial.txt";
 		UploadObjectArgs uArgs = UploadObjectArgs.builder()
@@ -122,11 +209,11 @@ public class App {
 		BucketExistsArgs beArgs = BucketExistsArgs.builder() // para comprobar si el bucket existe
 				.bucket(bucketName)
 				.build();
-		
+		setBucketPolicies(minioClient, bucketName);
 		if (minioClient.bucketExists(beArgs)) {
-			System.out.println("Bucket " + bucketName + " exists");
+			System.out.println("Created bucket " + bucketName);
 		} else {
-			System.out.println("Bucket " + bucketName + " does not exists");
+			System.out.println("Could not create bucket " + bucketName);
 		}
 	}
 	
@@ -232,14 +319,13 @@ public class App {
 			
 		}
 	
-	private static void setBucketPolicy(MinioClient minioClient) throws Exception{
+	private static void setOnlyReadBucketPolicy(MinioClient minioClient) throws Exception{
 		String bucketName = "test";
 		String policyJson = "{"
 			    + "\"Version\": \"2012-10-17\","
 			    + "\"Statement\": ["
 			    + "  {"
 			    + "    \"Effect\": \"Allow\","
-			    + "    \"Principal\": {\"AWS\": \"*\"},"
 			    + "    \"Action\": [\"s3:GetObject\"],"
 			    + "    \"Resource\": [\"arn:aws:s3:::%s/*\"]"
 			    + "  }"
@@ -256,6 +342,32 @@ public class App {
         );
 	}
 	
+	private static void setBucketPolicies(MinioClient minioClient, String bucketName) throws Exception{
+		
+        String policyJson = "{"
+                + "\"Version\": \"2012-10-17\","
+                + "\"Statement\": ["
+                + "  {"
+                + "    \"Effect\": \"Allow\","
+                + "    \"Principal\": {\"AWS\": \"*\"},"
+                + "    \"Action\": \"s3:*\"," // Permite todas las acciones
+                + "    \"Resource\": ["
+                + "      \"arn:aws:s3:::" + bucketName + "\","
+                + "      \"arn:aws:s3:::" + bucketName + "/*\""
+                + "    ]"
+                + "  }"
+                + "]"
+                + "}";
+        
+       
+        minioClient.setBucketPolicy(
+            SetBucketPolicyArgs.builder()
+                .bucket(bucketName)
+                .config(policyJson)
+                .build()
+        );
+	}
+	
 	private static void showPolicy(MinioClient minioClient, String bucketName) throws Exception{
 		String policy = minioClient.getBucketPolicy(
 			    GetBucketPolicyArgs.builder()
@@ -263,7 +375,7 @@ public class App {
 			        .build()
 			);
 
-			System.out.println("Política actual del bucket: " + policy);
+		System.out.println("Política actual del bucket: " + policy);
 	}
 	
 }
